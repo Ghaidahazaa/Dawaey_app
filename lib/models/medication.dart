@@ -1,4 +1,3 @@
-// lib/models/medication.dart
 
 class Medication {
   final String name; // اسم الدواء
