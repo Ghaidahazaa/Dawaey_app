@@ -23,7 +23,6 @@ class Medication {
     this.intervalHours,
   });
 
-  // تحويل خريطة إلى كائن Medication
   factory Medication.fromMap(Map<String, dynamic> map) {
     return Medication(
       name: map['name'],
@@ -41,7 +40,6 @@ class Medication {
     );
   }
 
-  // تحويل كائن Medication إلى خريطة
   Map<String, dynamic> toMap() {
     return {
       'name': name,
