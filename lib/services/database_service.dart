@@ -1,4 +1,3 @@
-// lib/services/database_service.dart
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/medication.dart';
