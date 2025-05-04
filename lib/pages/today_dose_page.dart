@@ -20,20 +20,17 @@ class _TodayDosePageState extends State<TodayDosePage> with RouteAware {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // ربط RouteObserver هنا
     routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
   @override
   void dispose() {
-    // إلغاء الاشتراك عند التخلص من الصفحة
     routeObserver.unsubscribe(this);
     super.dispose();
   }
 
   @override
   void didPopNext() {
-    // أعيد تحميل البيانات عندما تعود لهذه الصفحة
     _loadTodayDoses();
   }
 
