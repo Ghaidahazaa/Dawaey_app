@@ -1,4 +1,3 @@
-// lib/pages/adherence_page.dart
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 
