@@ -1,4 +1,3 @@
-// lib/pages/home_page.dart
 import 'package:flutter/material.dart';
 import 'add_medication_page.dart';
 import 'today_dose_page.dart';
