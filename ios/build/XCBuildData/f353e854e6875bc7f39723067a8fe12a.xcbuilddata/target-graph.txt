@@ -1,0 +1,16 @@
+Target dependency graph (7 targets)
+Target 'Pods-RunnerTests' in project 'Pods'
+➜ Explicit dependency on target 'Pods-Runner' in project 'Pods'
+Target 'Pods-Runner' in project 'Pods'
+➜ Explicit dependency on target 'Flutter' in project 'Pods'
+➜ Explicit dependency on target 'flutter_local_notifications' in project 'Pods'
+➜ Explicit dependency on target 'sqflite_darwin' in project 'Pods'
+Target 'sqflite_darwin' in project 'Pods'
+➜ Explicit dependency on target 'Flutter' in project 'Pods'
+➜ Explicit dependency on target 'sqflite_darwin-sqflite_darwin_privacy' in project 'Pods'
+Target 'sqflite_darwin-sqflite_darwin_privacy' in project 'Pods' (no dependencies)
+Target 'flutter_local_notifications' in project 'Pods'
+➜ Explicit dependency on target 'Flutter' in project 'Pods'
+➜ Explicit dependency on target 'flutter_local_notifications-flutter_local_notifications_privacy' in project 'Pods'
+Target 'flutter_local_notifications-flutter_local_notifications_privacy' in project 'Pods' (no dependencies)
+Target 'Flutter' in project 'Pods' (no dependencies)

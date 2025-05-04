@@ -2,18 +2,39 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/database_service.dart';
+import '../main.dart';
 
 class TodayDosePage extends StatefulWidget {
   @override
   _TodayDosePageState createState() => _TodayDosePageState();
 }
 
-class _TodayDosePageState extends State<TodayDosePage> {
+class _TodayDosePageState extends State<TodayDosePage> with RouteAware {
   List<Map<String, dynamic>> todayDoses = [];
 
   @override
   void initState() {
     super.initState();
+    _loadTodayDoses();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ربط RouteObserver هنا
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    // إلغاء الاشتراك عند التخلص من الصفحة
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // أعيد تحميل البيانات عندما تعود لهذه الصفحة
     _loadTodayDoses();
   }
 

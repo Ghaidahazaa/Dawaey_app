@@ -2,7 +2,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/medication.dart';
-import 'adherence_page.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -44,6 +43,7 @@ class DatabaseService {
           CREATE TABLE adherence_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             medName TEXT,
+            dosage TEXT,
             scheduledTime TEXT,
             actualTime TEXT,
             taken INTEGER
@@ -66,23 +66,41 @@ class DatabaseService {
       'isPermanent': med.isPermanent ? 1 : 0,
       'intervalHours': med.intervalHours ?? 0,
     });
-    print("تم إضافة دواء: ${med.name}");
   }
 
   Future<void> insertAdherenceLog(
-    String medName,
-    String scheduledTime,
-    DateTime actualTime,
-    bool taken,
-  ) async {
+  String medName,
+  String scheduledTime,
+  DateTime actualTime,
+  bool taken, [
+  String? dosage,
+]) async {
     final db = await database;
-    await db.insert('adherence_logs', {
-      'medName': medName,
-      'scheduledTime': scheduledTime,
-      'actualTime': actualTime.toIso8601String(),
-      'taken': taken ? 1 : 0,
-    });
-    print("تم إضافة سجل الالتزام: $medName في $scheduledTime");
+    final existing = await db.query(
+      'adherence_logs',
+      where: 'medName = ? AND scheduledTime = ?',
+      whereArgs: [medName, scheduledTime],
+    );
+
+    if (existing.isNotEmpty) {
+      await db.update(
+        'adherence_logs',
+        {
+          'actualTime': actualTime.toIso8601String(),
+          'taken': taken ? 1 : 0,
+        },
+        where: 'medName = ? AND scheduledTime = ?',
+        whereArgs: [medName, scheduledTime],
+      );
+    } else {
+      await db.insert('adherence_logs', {
+        'medName': medName,
+        'dosage': dosage ?? 'غير محدد',
+        'scheduledTime': scheduledTime,
+        'actualTime': actualTime.toIso8601String(),
+        'taken': taken ? 1 : 0,
+      });
+    }
   }
 
   Future<List<Map<String, dynamic>>> fetchTodayDoses() async {
@@ -90,73 +108,21 @@ class DatabaseService {
     final now = DateTime.now();
     final todayStr = now.toIso8601String().split('T').first;
 
-    final meds = await db.query('medications');
-    List<Map<String, dynamic>> doses = [];
-
-    for (var med in meds) {
-      final int dosesPerDay = med['dosesPerDay'] as int;
-      final int interval = med['intervalHours'] as int? ?? (24 ~/ dosesPerDay);
-      final startTime = DateTime.parse(med['firstDoseTime'] as String);
-      final List<int> selectedDays = (med['selectedDays'] as String)
-          .split(',')
-          .where((e) => e.trim().isNotEmpty)
-          .map((e) => int.tryParse(e.trim()) ?? 0)
-          .toList();
-
-      for (int i = 0; i < dosesPerDay; i++) {
-        final doseTime = startTime.add(Duration(hours: interval * i));
-        final scheduledTime = DateTime(
-          now.year,
-          now.month,
-          now.day,
-          doseTime.hour,
-          doseTime.minute,
-        );
-
-        final frequency = med['frequency'];
-        final includeToday =
-            frequency == 'daily' ||
-            (frequency == 'weekly' && selectedDays.contains(now.weekday)) ||
-            (frequency == 'monthly' && selectedDays.contains(now.day));
-
-        if (includeToday) {
-          doses.add({
-            'name': med['name'],
-            'time': scheduledTime,
-            'status': 'pending',
-            'dosage': med['dosage'],
-          });
-        }
-      }
-    }
-
     final logs = await db.query(
       'adherence_logs',
       where: 'scheduledTime LIKE ?',
       whereArgs: ['%$todayStr%'],
+      orderBy: 'scheduledTime ASC',
     );
 
-    for (var log in logs) {
-      final loggedTime = DateTime.parse(log['scheduledTime'] as String);
-      final index = doses.indexWhere((d) =>
-          d['name'] == log['medName'] &&
-          (d['time'] as DateTime).hour == loggedTime.hour &&
-          (d['time'] as DateTime).minute == loggedTime.minute);
-
-      if (index != -1) {
-        doses[index]['status'] = (log['taken'] as int) == 1 ? 'taken' : 'skipped';
-      } else {
-        doses.add({
-          'name': log['medName'],
-          'time': loggedTime,
-          'status': (log['taken'] as int) == 1 ? 'taken' : 'skipped',
-          'dosage': 'غير محدد',
-        });
-      }
-    }
-
-    doses.sort((a, b) => (a['time'] as DateTime).compareTo(b['time'] as DateTime));
-    return doses;
+    return logs.map((e) {
+      return {
+        'name': e['medName'],
+        'dosage': e['dosage'] ?? 'غير محدد',
+        'time': DateTime.parse(e['scheduledTime'] as String),
+        'status': (e['taken'] as int) == 1 ? 'taken' : 'pending',
+      };
+    }).toList();
   }
 
   Future<List<Map<String, dynamic>>> getAdherenceLogs() async {

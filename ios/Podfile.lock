@@ -21,9 +21,9 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_local_notifications: ad39620c743ea4c15127860f4b5641649a988100
+  flutter_local_notifications: ef18f0537538fcd18e9106b3ddc91cc10b4e579a
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
 
-PODFILE CHECKSUM: 4922199b5b3854e7c0c2afda74c2fa2ae220b9d8
+PODFILE CHECKSUM: ff53c6a054b02abd16e6f0af7cebe19f3a2fdb13
 
 COCOAPODS: 1.16.2

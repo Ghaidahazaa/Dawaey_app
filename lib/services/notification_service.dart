@@ -1,10 +1,9 @@
-// lib/services/notification_service.dart
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:intl/intl.dart';
+import 'dart:io' show Platform;
 import 'database_service.dart';
-import 'adherence_page.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -39,25 +38,28 @@ class NotificationService {
         if (parts.length >= 2) {
           final medName = parts[0];
           final scheduledTime = parts[1];
-
           final taken = response.actionId == 'taken';
+
           await DatabaseService().insertAdherenceLog(
             medName,
             scheduledTime,
             DateTime.now(),
             taken,
           );
-          print("تم تسجيل الالتزام للدواء: $medName في $scheduledTime");
-        } else {
-          print("خطأ في تحليل الحمولة: $payload");
+
+          print('✅ تم تسجيل التفاعل: $medName - ${taken ? "تم التناول" : "تخطي"}');
         }
       },
     );
 
-    // iOS فقط: إعداد زر التفاعل
-    await _plugin
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
+    // ⛳ Android 13+ permissions
+    if (Platform.isAndroid) {
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+      final granted = await androidPlugin?.requestPermission();
+      print('🔔 صلاحية الإشعار (Android): $granted');
+    }
   }
 
   Future<void> scheduleMedication({
@@ -79,11 +81,13 @@ class NotificationService {
       for (int d = 0; isPermanent || d < durationInDays; d++) {
         final scheduled = baseTime.add(Duration(days: d));
 
-        // تحقق من الأيام المحددة للتكرار
         if (frequency == 'weekly' && !selectedDays.contains(scheduled.weekday)) continue;
         if (frequency == 'monthly' && !selectedDays.contains(scheduled.day)) continue;
 
         final id = i + d * dosesPerDay;
+
+        print('🔔 جدولة: $name - ${scheduled.toIso8601String()}');
+
         await _plugin.zonedSchedule(
           id,
           'جرعة $name',
@@ -93,6 +97,7 @@ class NotificationService {
             android: AndroidNotificationDetails(
               'med_channel_id',
               'Medication Reminders',
+              channelDescription: 'تنبيهات لتذكيرك بتناول الأدوية',
               importance: Importance.max,
               priority: Priority.high,
               actions: [
@@ -105,12 +110,11 @@ class NotificationService {
             ),
           ),
           androidAllowWhileIdle: true,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: DateTimeComponents.time,
           payload: '$name|${DateFormat('yyyy-MM-dd HH:mm').format(scheduled)}',
         );
-
-        print("تم جدولة إشعار للدواء: $name في $scheduled");
       }
     }
   }

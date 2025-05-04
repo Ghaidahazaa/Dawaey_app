@@ -23,7 +23,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
   bool _isPermanent = false;
 
   final List<String> _frequencies = ['daily', 'weekly', 'monthly'];
-  final List<String> _weekDays = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+  final List<String> _weekDays = ['السبت', 'الجمعة', 'الخميس', 'الأربعاء', 'الثلاثاء', 'الاثنين', 'الأحد'];
 
   Future<void> _pickTime() async {
     final picked = await showTimePicker(
@@ -112,19 +112,17 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(labelText: 'عدد الأيام'),
                       enabled: !_isPermanent,
-                      validator: (value) =>
-                          !_isPermanent && (value == null || value.isEmpty) ? 'مطلوب' : null,
+                      validator: (value) => !_isPermanent && value!.isEmpty ? 'مطلوب' : null,
                     ),
                   ),
                   Checkbox(
                     value: _isPermanent,
-                    onChanged: (val) => setState(() => _isPermanent = val ?? false),
+                    onChanged: (val) => setState(() => _isPermanent = val! ?? false),
                   ),
-                  const SizedBox(width: 8),
-                  const Text('دائم'),
+                  Text('دائم'),
                 ],
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate() && _firstDoseTime != null) {
@@ -151,7 +149,6 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
 
                     try {
                       await DatabaseService().insertMedication(med);
-                      print("تم إضافة الدواء: ${med.name}");
                       await NotificationService().scheduleMedication(
                         name: med.name,
                         dosage: med.dosage,
@@ -163,27 +160,45 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                         frequency: med.frequency,
                         selectedDays: med.selectedDays,
                       );
-                      print("تم جدولة الإشعارات للدواء: ${med.name}");
-                    } catch (e) {
-                      print("حدث خطأ أثناء الحفظ أو الجدولة: $e");
+
+                      for (int i = 0; i < med.dosesPerDay; i++) {
+                        final interval = Duration(hours: med.intervalHours ?? 24 ~/ med.dosesPerDay);
+                        final baseTime = med.firstDoseTime.add(interval * i);
+
+                        for (int d = 0; med.isPermanent || d < med.durationInDays; d++) {
+                          final doseTime = baseTime.add(Duration(days: d));
+
+                          if ((med.frequency == 'weekly' && !med.selectedDays.contains(doseTime.weekday)) ||
+                              (med.frequency == 'monthly' && !med.selectedDays.contains(doseTime.day))) {
+                            continue;
+                          }
+
+                          await DatabaseService().insertAdherenceLog(
+                            med.name,
+                            doseTime.toIso8601String(),
+                            doseTime,
+                            false,
+                          );
+                        }
+                      }
+
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('حدث خطأ، يرجى المحاولة لاحقًا')),
+                        SnackBar(content: Text('تم حفظ الدواء وجدولة التذكير')),
                       );
-                      return;
+
+                      Navigator.pop(context);
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('حدث خطأ: $e')),
+                      );
                     }
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('تم حفظ الدواء وجدولة التذكير')),
-                    );
-
-                    Navigator.pop(context);
                   } else if (_firstDoseTime == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('يرجى اختيار وقت أول جرعة')),
+                      SnackBar(content: Text('يرجى اختيار وقت أول جرعة')),
                     );
                   }
                 },
-                child: const Text('حفظ وبدء التذكير'),
+                child: Text('حفظ وبدء التذكير'),
               ),
             ],
           ),
@@ -192,4 +207,3 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
     );
   }
 }
-
