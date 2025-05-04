@@ -42,10 +42,6 @@ To create a smart, personalized medication reminder app that enhances treatment 
 
 ---
 
-> **Repository Note:**
-This repository contains only core logic and main UI (`/lib`) to ensure lightweight sharing. Platform folders (iOS/Android/web) are excluded. Clone locally and run `flutter create .` to regenerate platform files before testing.
 
----
 
 **Maintainer:** Ghaidah Alhazzaa
-Feel free to contribute or request collaboration.
